@@ -151,9 +151,13 @@ button.btn:active{ transform:scale(.97); }
             <option value="advanced">Advanced (3+ years)</option>
           </select>
         </div>
-        <div class="field"><label for="pDays">Workout days per week</label>
-          <select id="pDays">
-            <option value="6">6 days (biceps &amp; triceps separate)</option>
+        <div class="field"><label for="pSplit">Workout split</label>
+          <select id="pSplit">
+            <option value="bodypart6">Body-part · 6 days (biceps &amp; triceps separate)</option>
+            <option value="ppl3">Push / Pull / Legs · 3 days</option>
+            <option value="ppl6">Push / Pull / Legs · 6 days (each twice a week)</option>
+            <option value="ul4">Upper / Lower · 4 days</option>
+            <option value="fb3">Full Body · 3 days</option>
           </select>
         </div>
         <div class="field"><label for="pGoal">Goal</label>
@@ -260,8 +264,8 @@ const toast = msg => {
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600);
 };
 
-let profile = store.get('ironlog.profile', { height:170, weight:70, level:'beginner', days:6, goal:'auto' });
-profile.days = 6; // only the 6-day biceps/triceps split is offered now
+let profile = store.get('ironlog.profile', { height:170, weight:70, level:'beginner', split:'bodypart6', goal:'auto' });
+if (!['bodypart6','ppl3','ppl6','ul4','fb3'].includes(profile.split)) profile.split = 'bodypart6';
 let logs = store.get('ironlog.logs', []);
 const sortedLogs = () => [...logs].sort((a,b) => a.date === b.date ? a.ts - b.ts : a.date.localeCompare(b.date));
 
@@ -309,6 +313,77 @@ const LIB = {
   tbar:      { name:'T-Bar Row',               t:'upper',              muscle:'Mid back, lats' },
   straight_arm:{ name:'Straight-Arm Pulldown', t:'upper',              muscle:'Lats' },
   front_raise:{ name:'Front Raise',            t:'upper',              muscle:'Front delts' },
+  // ---- Chest ----
+  decline_bb:{ name:'Decline Barbell Bench Press', t:'upper',           muscle:'Lower chest' },
+  incline_bb:{ name:'Incline Barbell Bench Press', t:'upper',           muscle:'Upper chest' },
+  db_bench:  { name:'Dumbbell Bench Press',    t:'upper',              muscle:'Chest, triceps' },
+  decline_db:{ name:'Decline Dumbbell Press',  t:'upper',              muscle:'Lower chest' },
+  db_fly:    { name:'Dumbbell Fly',            t:'upper',              muscle:'Chest' },
+  incline_fly:{ name:'Incline Dumbbell Fly',   t:'upper',              muscle:'Upper chest' },
+  ltoh_fly:  { name:'Low-to-High Cable Fly',   t:'upper',              muscle:'Upper chest' },
+  pushup:    { name:'Push-Ups',                t:'upper', bw:true,      muscle:'Chest, triceps' },
+  svend:     { name:'Svend Press',             t:'upper',              muscle:'Inner chest' },
+  // ---- Back ----
+  deadlift:  { name:'Deadlift',                t:'lower', main:true,    muscle:'Back, hamstrings, glutes' },
+  chinup:    { name:'Chin-Ups',                t:'upper', bw:true,      muscle:'Lats, biceps' },
+  cg_pulldown:{ name:'Close-Grip Lat Pulldown', t:'upper',             muscle:'Lats' },
+  chest_row: { name:'Chest-Supported Row',     t:'upper',              muscle:'Mid back' },
+  sa_cable_row:{ name:'Single-Arm Cable Row',  t:'upper',              muscle:'Lats, mid back' },
+  hyper:     { name:'Hyperextensions',         t:'lower', bw:true,     muscle:'Lower back, glutes' },
+  rack_pull: { name:'Rack Pulls',              t:'lower',              muscle:'Upper back, traps' },
+  // ---- Shoulders ----
+  seated_db: { name:'Seated Dumbbell Shoulder Press', t:'upper',       muscle:'Shoulders' },
+  push_press:{ name:'Push Press',              t:'upper', main:true,    muscle:'Shoulders, triceps' },
+  landmine:  { name:'Landmine Press',          t:'upper',              muscle:'Shoulders' },
+  machine_sh:{ name:'Machine Shoulder Press',  t:'upper',              muscle:'Shoulders' },
+  cable_lat: { name:'Cable Lateral Raise',     t:'upper',              muscle:'Side delts' },
+  upright:   { name:'Upright Row',             t:'upper',              muscle:'Shoulders, traps' },
+  rear_delt_fly:{ name:'Rear Delt Fly',        t:'upper',              muscle:'Rear delts' },
+  plate_front:{ name:'Plate Front Raise',      t:'upper',              muscle:'Front delts' },
+  hspu:      { name:'Handstand Push-Ups',      t:'upper', bw:true,      muscle:'Shoulders, triceps' },
+  // ---- Biceps ----
+  bb_curl:   { name:'Barbell Curl',            t:'upper',              muscle:'Biceps' },
+  ez_curl:   { name:'EZ-Bar Curl',             t:'upper',              muscle:'Biceps' },
+  rope_hammer:{ name:'Rope Hammer Curl',       t:'upper',              muscle:'Biceps, forearms' },
+  spider:    { name:'Spider Curl',             t:'upper',              muscle:'Biceps' },
+  bayes:     { name:'Bayesian Cable Curl',     t:'upper',              muscle:'Biceps' },
+  zottman:   { name:'Zottman Curl',            t:'upper',              muscle:'Biceps, forearms' },
+  drag:      { name:'Drag Curl',               t:'upper',              muscle:'Biceps' },
+  machine_curl:{ name:'Machine Biceps Curl',   t:'upper',              muscle:'Biceps' },
+  // ---- Triceps ----
+  pushdown_bar:{ name:'Triceps Pushdown (Bar)', t:'upper',            muscle:'Triceps' },
+  oh_db:     { name:'Overhead Dumbbell Extension', t:'upper',         muscle:'Triceps' },
+  bench_dip: { name:'Bench Dips',              t:'upper', bw:true,      muscle:'Triceps' },
+  diamond:   { name:'Diamond Push-Ups',        t:'upper', bw:true,      muscle:'Triceps, chest' },
+  single_pushdown:{ name:'Single-Arm Cable Pushdown', t:'upper',       muscle:'Triceps' },
+  jm:        { name:'JM Press',                t:'upper',              muscle:'Triceps' },
+  tri_machine:{ name:'Triceps Extension Machine', t:'upper',           muscle:'Triceps' },
+  french:    { name:'French Press',            t:'upper',              muscle:'Triceps' },
+  board:     { name:'Board Press',             t:'upper',              muscle:'Triceps' },
+  // ---- Legs ----
+  front_squat:{ name:'Front Squat',            t:'lower', main:true,    muscle:'Quads' },
+  hack:      { name:'Hack Squat',              t:'lower',              muscle:'Quads' },
+  bss:       { name:'Bulgarian Split Squat',   t:'lower',              muscle:'Quads, glutes' },
+  goblet:    { name:'Goblet Squat',            t:'lower',              muscle:'Quads' },
+  seated_curl:{ name:'Seated Leg Curl',        t:'lower',              muscle:'Hamstrings' },
+  gm:        { name:'Good Morning',            t:'lower',              muscle:'Hamstrings, lower back' },
+  nordic:    { name:'Nordic Hamstring Curl',   t:'lower', bw:true,      muscle:'Hamstrings' },
+  hip_thrust:{ name:'Hip Thrust',              t:'lower', main:true,    muscle:'Glutes' },
+  glute_bridge:{ name:'Glute Bridge',          t:'lower',              muscle:'Glutes' },
+  seated_calf:{ name:'Seated Calf Raise',      t:'lower',              muscle:'Calves' },
+  donkey:    { name:'Donkey Calf Raise',       t:'lower',              muscle:'Calves' },
+  // ---- Abs / core ----
+  plank:     { name:'Plank (seconds)',         t:'core', hold:true,    muscle:'Core' },
+  side_plank:{ name:'Side Plank (seconds)',    t:'core', hold:true,    muscle:'Obliques' },
+  crunch:    { name:'Crunches',                t:'core', bw:true,      muscle:'Abs' },
+  russian:   { name:'Russian Twist',           t:'core', bw:true,      muscle:'Obliques' },
+  dead_bug:  { name:'Dead Bug',                t:'core', bw:true,      muscle:'Deep core' },
+  bicycle:   { name:'Bicycle Crunch',          t:'core', bw:true,      muscle:'Abs, obliques' },
+  mtn:       { name:'Mountain Climbers',       t:'core', bw:true,      muscle:'Abs, cardio' },
+  vup:       { name:'V-Ups',                   t:'core', bw:true,      muscle:'Abs' },
+  rev_crunch:{ name:'Reverse Crunch',          t:'core', bw:true,      muscle:'Lower abs' },
+  pallof:    { name:'Pallof Press',            t:'core',              muscle:'Obliques' },
+  flutter:   { name:'Flutter Kicks',           t:'core', bw:true,      muscle:'Lower abs' },
   cable_curl:{ name:'Cable Curl',              t:'upper',              muscle:'Biceps' },
   oh_ext:    { name:'Overhead Triceps Extension', t:'upper',           muscle:'Triceps' },
   concentration:{ name:'Concentration Curl',   t:'upper',              muscle:'Biceps' },
@@ -348,24 +423,52 @@ const GOALS = {
 /* Body parts: exercise pools that rotate after every session of that part.
    The first `keep` exercises are always included (main lifts); the rest rotate. */
 const PARTS = {
-  chest:     { label:'Chest',     keep:1, pool:['bench','incline','machine_press','cable_fly','dip','pec_deck'] },
-  back:      { label:'Back',      keep:1, pool:['row','pullup','pulldown','cable_row','db_row','tbar','straight_arm'] },
-  legs:      { label:'Legs',      keep:2, pool:['squat','rdl','legpress','legcurl','calf','legext','lunge'] },
-  shoulders: { label:'Shoulders', keep:1, pool:['ohp','arnold','lat_raise','rear_fly','face','front_raise'] },
-  biceps:    { label:'Biceps',    keep:0, pool:['curl','hammer','preacher','cable_curl','concentration','reverse_curl','incline_curl'] },
-  triceps:   { label:'Triceps',   keep:0, pool:['tri','skull','oh_ext','close_grip','kickback','cable_oh'] },
-  abs:       { label:'Abs',       keep:0, pool:['cable_crunch','woodchop','hlr','ab_wheel','decline_situp','knee_raise'] }
+  // Full exercise lists from the coach's sheet. Rotation picks a new window every session.
+  chest:     { label:'Chest',     keep:1, pool:['bench','incline_bb','decline_bb','db_bench','incline','decline_db','db_fly','incline_fly','cable_fly','ltoh_fly','machine_press','pec_deck','pushup','dip','svend'] },
+  back:      { label:'Back',      keep:1, pool:['row','pullup','chinup','pulldown','cg_pulldown','cable_row','db_row','chest_row','sa_cable_row','tbar','straight_arm','face','hyper','rack_pull'] },
+  legs:      { label:'Legs',      keep:2, pool:['squat','rdl','deadlift','legpress','front_squat','hack','bss','goblet','lunge','legext','legcurl','seated_curl','gm','nordic','hip_thrust','glute_bridge','calf','seated_calf','donkey'] },
+  shoulders: { label:'Shoulders', keep:1, pool:['ohp','seated_db','arnold','push_press','landmine','machine_sh','lat_raise','cable_lat','front_raise','upright','rear_delt_fly','rear_fly','face','plate_front','hspu'] },
+  push:      { label:'Push',      keep:2, pool:['bench','ohp','incline_bb','decline_bb','db_bench','incline','db_fly','cable_fly','ltoh_fly','machine_press','pec_deck','pushup','dip','svend','lat_raise','arnold','push_press','landmine','machine_sh','cable_lat','front_raise','close_grip','tri','skull','oh_ext','oh_db','pushdown_bar','kickback','cable_oh','bench_dip','diamond','jm','french','board','tri_machine','single_pushdown'] },
+  pull:      { label:'Pull',      keep:2, pool:['row','pullup','chinup','pulldown','cg_pulldown','cable_row','db_row','chest_row','sa_cable_row','tbar','straight_arm','face','rear_delt_fly','rear_fly','hyper','rack_pull','curl','hammer','preacher','cable_curl','concentration','reverse_curl','incline_curl','bb_curl','ez_curl','rope_hammer','spider','bayes','zottman','drag','machine_curl'] },
+  upper:     { label:'Upper',     keep:2, pool:['bench','row','ohp','incline','db_bench','machine_press','pulldown','cg_pulldown','cable_row','db_row','chest_row','sa_cable_row','pullup','chinup','lat_raise','cable_lat','arnold','seated_db','push_press','curl','hammer','bb_curl','ez_curl','tri','skull','close_grip','pushdown_bar','oh_db','kickback','face','rear_delt_fly','dip'] },
+  biceps:    { label:'Biceps',    keep:0, pool:['bb_curl','ez_curl','curl','hammer','incline_curl','preacher','concentration','cable_curl','rope_hammer','spider','bayes','reverse_curl','zottman','drag','machine_curl'] },
+  triceps:   { label:'Triceps',   keep:0, pool:['close_grip','tri','pushdown_bar','oh_db','cable_oh','skull','bench_dip','diamond','kickback','single_pushdown','jm','tri_machine','french','board','oh_ext'] },
+  abs:       { label:'Abs',       keep:0, pool:['cable_crunch','hlr','woodchop','ab_wheel','decline_situp','knee_raise','plank','side_plank','crunch','russian','dead_bug','bicycle','mtn','vup','rev_crunch','pallof','flutter'] }
 };
 
 /* Workout days per split. Each day lists the body parts it trains and how many exercises from each. */
 const SPLITS = {
-  6: { name:'Body-part · 6-day', days:[
+  bodypart6: { name:'Body-part · 6-day', days:[
     { name:'Chest',     focus:'Chest · 5 exercises',                       parts:[{key:'chest', n:5}] },
     { name:'Back',      focus:'Lats · Mid back · + Abs (alternate day)',   parts:[{key:'back', n:5}, {key:'abs', n:4}] },
     { name:'Legs',      focus:'Quads · Hamstrings · Calves',               parts:[{key:'legs', n:5}] },
     { name:'Shoulders', focus:'Delts · + Abs (alternate day)',             parts:[{key:'shoulders', n:5}, {key:'abs', n:4}] },
     { name:'Biceps',    focus:'Biceps',                                    parts:[{key:'biceps', n:5}] },
     { name:'Triceps',   focus:'Triceps · + Abs (alternate day)',           parts:[{key:'triceps', n:5}, {key:'abs', n:4}] }
+  ]},
+  ppl3: { name:'Push / Pull / Legs · 3-day', days:[
+    { name:'Push', focus:'Chest · Shoulders · Triceps',        parts:[{key:'push', n:6}] },
+    { name:'Pull', focus:'Back · Biceps · + Abs (alternate day)', parts:[{key:'pull', n:6}, {key:'abs', n:4}] },
+    { name:'Legs', focus:'Quads · Hamstrings · Calves',        parts:[{key:'legs', n:6}] }
+  ]},
+  ppl6: { name:'Push / Pull / Legs · 6-day', days:[
+    { name:'Push A', focus:'Chest · Shoulders · Triceps',        parts:[{key:'push', n:6}] },
+    { name:'Pull A', focus:'Back · Biceps · + Abs (alternate day)', parts:[{key:'pull', n:6}, {key:'abs', n:4}] },
+    { name:'Legs A', focus:'Quads · Hamstrings · Calves',        parts:[{key:'legs', n:6}] },
+    { name:'Push B', focus:'Chest · Shoulders · Triceps',        parts:[{key:'push', n:6}] },
+    { name:'Pull B', focus:'Back · Biceps · + Abs (alternate day)', parts:[{key:'pull', n:6}, {key:'abs', n:4}] },
+    { name:'Legs B', focus:'Quads · Hamstrings · Calves',        parts:[{key:'legs', n:6}] }
+  ]},
+  ul4: { name:'Upper / Lower · 4-day', days:[
+    { name:'Upper A', focus:'Chest · Back · Shoulders · Arms',       parts:[{key:'upper', n:6}] },
+    { name:'Lower A', focus:'Quads · Hamstrings · Calves · + Abs',   parts:[{key:'legs', n:6}, {key:'abs', n:4}] },
+    { name:'Upper B', focus:'Chest · Back · Shoulders · Arms',       parts:[{key:'upper', n:6}] },
+    { name:'Lower B', focus:'Quads · Hamstrings · Calves · + Abs',   parts:[{key:'legs', n:6}, {key:'abs', n:4}] }
+  ]},
+  fb3: { name:'Full Body · 3-day', days:[
+    { name:'Full Body A', focus:'Legs · Chest · Back · Shoulders',           parts:[{key:'legs', n:3}, {key:'chest', n:2}, {key:'back', n:2}, {key:'shoulders', n:1}] },
+    { name:'Full Body B', focus:'Legs · Chest · Back · Shoulders · + Abs',   parts:[{key:'legs', n:3}, {key:'chest', n:2}, {key:'back', n:2}, {key:'shoulders', n:1}, {key:'abs', n:4}] },
+    { name:'Full Body C', focus:'Legs · Chest · Back · Shoulders',           parts:[{key:'legs', n:3}, {key:'chest', n:2}, {key:'back', n:2}, {key:'shoulders', n:1}] }
   ]}
 };
 
@@ -381,8 +484,9 @@ function pickExercises(key, n){
   const picks = Array.from({ length: need }, (_, i) => rest[(start + i) % rest.length]);
   return [...fixed, ...picks];
 }
+const SPLIT_IDS = Object.keys(SPLITS);
 const DAY_LABELS = {
-  6:['Mon','Tue','Wed','Thu','Fri','Sat']
+  3:['Mon','Wed','Fri'], 4:['Mon','Tue','Thu','Fri'], 6:['Mon','Tue','Wed','Thu','Fri','Sat']
 };
 
 /* ---------- Plan engine ---------- */
@@ -392,6 +496,7 @@ const resolveGoal = p => (p.goal === 'bulk' || p.goal === 'lean') ? p.goal : (bm
 
 function prescribe(L, goal, level){
   const g = GOALS[goal];
+  if (L.hold) return { sets: 3, lo: 30, hi: 60, rest: 45 };   // timed holds: seconds, not reps
   if (L.main) return { sets: level === 'beginner' ? 3 : g.mainSets, lo: g.mainLo, hi: g.mainHi, rest: g.mainRest };
   if (L.t === 'core') return { sets: g.coreSets, lo: g.coreLo, hi: g.coreHi, rest: g.coreRest };
   return { sets: g.accSets, lo: g.accLo, hi: g.accHi, rest: g.accRest };
@@ -399,15 +504,15 @@ function prescribe(L, goal, level){
 
 function getPlan(p = profile){
   const goal = resolveGoal(p);
-  const split = SPLITS[p.days] || SPLITS[4];
+  const split = SPLITS[p.split] || SPLITS.bodypart6;
   return {
     goal, split: split.name,
     days: split.days.map((d, i) => ({
       i, name: d.name, focus: d.focus,
       parts: d.parts.map(pt => pt.key),
-      ex: d.parts.flatMap(pt => pickExercises(pt.key, pt.n)).map(id => {
+      ex: [...new Set(d.parts.flatMap(pt => pickExercises(pt.key, pt.n)))].map(id => {
         const L = LIB[id];
-        return { id, name: L.name, muscle: L.muscle, main: !!L.main, ...prescribe(L, goal, p.level) };
+        return { id, name: L.name, muscle: L.muscle, main: !!L.main, hold: !!L.hold, ...prescribe(L, goal, p.level) };
       })
     }))
   };
@@ -428,8 +533,9 @@ function suggest(e){
   const inc = incOf(e.id);
   if (last.sets.every(s => s.r >= e.hi)) {
     if (inc === 0) {
-      const r = e.hi + 2;
-      return { w:'', r, text:`⬆ Overload: aim for ${r} reps (+2) — bodyweight move` };
+      const step = LIB[e.id].hold ? 5 : 2;
+      const r = e.hi + step;
+      return { w:'', r, text:`⬆ Overload: aim for ${r} ${LIB[e.id].hold ? 'seconds' : 'reps'} (+${step}) — bodyweight move` };
     }
     const nw = +(maxW + inc).toFixed(2);
     return { w:nw, r:e.lo, text:`⬆ Overload: add ${inc} kg → ${nw} kg × ${e.lo} reps` };
@@ -446,11 +552,11 @@ function renderDashboard(){
   $('#pHeight').value = profile.height;
   $('#pWeight').value = profile.weight;
   $('#pLevel').value = profile.level;
-  $('#pDays').value = profile.days;
+  $('#pSplit').value = profile.split;
   $('#pGoal').value = profile.goal;
 
   const b = bmiVal(profile), goal = resolveGoal(profile), G = GOALS[goal], plan = getPlan();
-  const suggestedDays = 6;
+  const suggestedDays = getPlan().days.length;
   const why = goal === 'lean'
     ? 'Fat-loss focus: keep muscle while leaning out.'
     : 'Muscle-gain focus: build muscle with a controlled surplus.';
@@ -464,14 +570,14 @@ function renderDashboard(){
     <p><strong>${G.label}</strong><br>BMI ${b.toFixed(1)} (${bmiCat(b)}). ${why}</p>
     <p><strong>Nutrition</strong><br>Protein: about ${Math.round(profile.weight * G.protein)} g/day (${G.protein} g per kg).<br>${G.calories}</p>
     <p><strong>Cardio</strong><br>${G.cardio}</p>
-    <p><strong>Training</strong><br>${profile.days} sessions per week. Biceps and triceps are separate days (${suggestedDays} training days). Abs add-on on Back, Shoulders and Triceps.<br>
+    <p><strong>Training</strong><br>${plan.split} · ${suggestedDays} training days per week. Abs add-on on alternate days, in addition to the main exercises.<br>
        Main lifts: ${G.mainLo}–${G.mainHi} reps, ${profile.level === 'beginner' ? 3 : G.mainSets} sets, rest ${fmtRest(G.mainRest)}.<br>
        Accessories: ${G.accLo}–${G.accHi} reps, ${G.accSets} sets, rest ${fmtRest(G.accRest)}.</p>
     <p class="note">General fitness guidance, not medical advice. See a doctor before starting, especially if you have a health condition. ${b < 18.5 ? 'Because your BMI is below the healthy range, please confirm the bulk plan with a doctor or dietitian.' : ''}</p>`;
 }
 
 function renderProgram(){
-  const plan = getPlan(), labels = DAY_LABELS[profile.days] || DAY_LABELS[4];
+  const plan = getPlan(), labels = DAY_LABELS[plan.days.length] || DAY_LABELS[3];
   $('#programSub').textContent = `${plan.split} · ${plan.goal === 'bulk' ? 'Bulk' : 'Lean'} plan. Accessory exercises rotate after each session of that body part; main lifts stay.`;
   $('#schedule').innerHTML = `
     <table>
@@ -489,7 +595,7 @@ function renderProgram(){
             <td class="note">${e.muscle}</td>
             <td><strong>${e.sets} × ${e.lo}–${e.hi}</strong></td>
             <td>${fmtRest(e.rest)}</td>
-            <td class="note">${incOf(e.id) ? `+${incOf(e.id)} kg` : '+2 reps'} when all ${e.sets} sets hit ${e.hi} reps</td>
+            <td class="note">${incOf(e.id) ? `+${incOf(e.id)} kg` : (e.hold ? '+5 sec' : '+2 reps')} when all ${e.sets} sets hit ${e.hi} reps</td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -629,7 +735,7 @@ $('#profileForm').addEventListener('submit', e => {
   if (!(h >= 100 && h <= 250) || !(w >= 30 && w <= 300)) {
     toast('Enter a realistic height (100–250 cm) and weight (30–300 kg).'); return;
   }
-  profile = { height:h, weight:w, level:$('#pLevel').value, days:+$('#pDays').value, goal:$('#pGoal').value };
+  profile = { height:h, weight:w, level:$('#pLevel').value, split:$('#pSplit').value, goal:$('#pGoal').value };
   store.set('ironlog.profile', profile);
   renderAll();
   toast('Plan built from your BMI, experience and goal.');
