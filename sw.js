@@ -1,5 +1,5 @@
 // Muscle Factory service worker: caches the app shell so it opens offline.
-const CACHE = 'muscle-factory-v2';
+const CACHE = 'muscle-factory-v3';
 const SHELL = [
   './',
   './index.html',
